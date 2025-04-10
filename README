@@ -1,0 +1,11 @@
+Дополнительные улучшения:
+Если нужно убрать заголовки в CSV, добавьте параметр -NoHeader:
+Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8 -NoHeader
+
+Для сортировки по имени пользователя добавьте перед экспортом:
+$results | Sort-Object UserName | Select-Object UserName, DriveLetter, RemotePath | ...
+
+Если нужно исключить системные учетные записи (Administrator, SYSTEM и т.д.):
+
+$systemUsers = @("Administrator", "SYSTEM", "DefaultAccount") # и другие
+$results | Where-Object { $_.UserName -notin $systemUsers } | ...
