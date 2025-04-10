@@ -1,7 +1,6 @@
-# Import-Drives_CrossAuth.ps1
+# Import-Drives_ManualAuth.ps1
 param(
-    [string]$inputFile = "C:\Temp\AllUserMappedDrives_Simplified.csv",
-    [string]$localCredFile = "C:\Temp\LocalStorageCred.xml"
+    [string]$inputFile = "C:\Temp\AllUserMappedDrives_Simplified.csv"
 )
 
 # Проверка файла с дисками
@@ -10,17 +9,11 @@ if (-not (Test-Path $inputFile)) {
     exit 1
 }
 
-# Проверка/создание файла учетных данных
-if (-not (Test-Path $localCredFile)) {
-    Write-Host "Файл учетных данных не найден. Создаем новый..." -ForegroundColor Yellow
-    $cred = Get-Credential -Message "Введите учетные данные для доступа к файловому хранилищу (рабочая группа)"
-    $cred | Export-Clixml -Path $localCredFile -Force
-    Write-Host "Учетные данные сохранены в $localCredFile" -ForegroundColor Green
-}
+# Запрос учетных данных
+$cred = Get-Credential -Message "Введите учетные данные для подключения сетевых дисков (формат: ЛОГИН или ДОМЕН\ЛОГИН)"
 
-# Загрузка данных
+# Загрузка списка дисков
 $drivesToMap = Import-Csv -Path $inputFile
-$storageCred = Import-Clixml -Path $localCredFile
 
 # Статистика
 $stats = @{
@@ -38,42 +31,45 @@ foreach ($drive in $drivesToMap) {
 
         # Проверяем существование диска
         if (Test-Path "${driveLetter}\") {
-            Write-Host "[SKIP] $driveLetter уже подключен" -ForegroundColor Yellow
+            Write-Host "[SKIP] $driveLetter уже подключен ($($drive.RemotePath))" -ForegroundColor Yellow
             $stats.Skipped++
             continue
         }
 
-        # Подключаем диск с отдельными учетными данными
-        $netUseCmd = "net use $driveLetter $($drive.RemotePath) /persistent:yes " +
-                    "/user:$($storageCred.UserName) " +
-                    """$($storageCred.GetNetworkCredential().Password)"""
+        # Формируем команду подключения
+        $username = $cred.UserName
+        $password = $cred.GetNetworkCredential().Password
         
+        $netUseCmd = @"
+net use $driveLetter "$($drive.RemotePath)" /persistent:yes /user:"$username" "$password"
+"@
+        
+        # Выполняем подключение
         $result = cmd /c $netUseCmd 2>&1
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] $driveLetter → $($drive.RemotePath)" -ForegroundColor Green
+            Write-Host "[OK] Успешно: $driveLetter → $($drive.RemotePath)" -ForegroundColor Green
             $stats.Success++
         } else {
             Write-Host "[ERROR] $driveLetter: $result" -ForegroundColor Red
             $stats.Errors++
         }
     } catch {
-        Write-Host "[FATAL] $($drive.DriveLetter): $_" -ForegroundColor Red
+        Write-Host "[FATAL] Ошибка при обработке $($drive.DriveLetter): $_" -ForegroundColor Red
         $stats.Errors++
     }
 }
 
-# Вывод статистики
-Write-Host "`nИтоги выполнения:" -ForegroundColor Cyan
-Write-Host "Всего дисков: $($stats.Total)"
-Write-Host "Успешно: $($stats.Success)"
-Write-Host "Пропущено: $($stats.Skipped)"
-Write-Host "Ошибок: $($stats.Errors)"
+# Итоговая статистика
+Write-Host "`nРезультаты:" -ForegroundColor Cyan
+Write-Host "• Всего дисков: $($stats.Total)"
+Write-Host "• Успешно: $($stats.Success) (зеленый)"
+Write-Host "• Пропущено: $($stats.Skipped) (желтый)"
+Write-Host "• Ошибок: $($stats.Errors) (красный)"
 
-# Дополнительная проверка
 if ($stats.Errors -gt 0) {
-    Write-Host "`nРекомендации:" -ForegroundColor Yellow
-    Write-Host "1. Проверьте правильность учетных данных в $localCredFile"
-    Write-Host "2. Убедитесь, что хранилище доступно по всем указанным путям"
-    Write-Host "3. Для пересоздания файла учетных данных удалите $localCredFile"
+    Write-Host "`nСоветы по устранению ошибок:" -ForegroundColor Yellow
+    Write-Host "1. Проверьте правильность введенных учетных данных"
+    Write-Host "2. Убедитесь, что сетевой путь доступен: Test-NetConnection <IP> -Port 445"
+    Write-Host "3. Проверьте, не занята ли буква диска"
 }
