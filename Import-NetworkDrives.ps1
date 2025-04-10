@@ -1,4 +1,4 @@
-# Import-Drives_ManualAuth.ps1
+# Import-Drives_ManualAuth_Fixed.ps1
 param(
     [string]$inputFile = "C:\Temp\AllUserMappedDrives_Simplified.csv"
 )
@@ -31,7 +31,7 @@ foreach ($drive in $drivesToMap) {
 
         # Проверяем существование диска
         if (Test-Path "${driveLetter}\") {
-            Write-Host "[SKIP] $driveLetter уже подключен ($($drive.RemotePath))" -ForegroundColor Yellow
+            Write-Host "[SKIP] ${driveLetter} уже подключен ($($drive.RemotePath))" -ForegroundColor Yellow
             $stats.Skipped++
             continue
         }
@@ -41,21 +41,21 @@ foreach ($drive in $drivesToMap) {
         $password = $cred.GetNetworkCredential().Password
         
         $netUseCmd = @"
-net use $driveLetter "$($drive.RemotePath)" /persistent:yes /user:"$username" "$password"
+net use ${driveLetter} "$($drive.RemotePath)" /persistent:yes /user:"$username" "$password"
 "@
         
         # Выполняем подключение
         $result = cmd /c $netUseCmd 2>&1
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] Успешно: $driveLetter → $($drive.RemotePath)" -ForegroundColor Green
+            Write-Host "[OK] Успешно: ${driveLetter} → $($drive.RemotePath)" -ForegroundColor Green
             $stats.Success++
         } else {
-            Write-Host "[ERROR] $driveLetter: $result" -ForegroundColor Red
+            Write-Host "[ERROR] ${driveLetter}: $($result -join ' ')" -ForegroundColor Red
             $stats.Errors++
         }
     } catch {
-        Write-Host "[FATAL] Ошибка при обработке $($drive.DriveLetter): $_" -ForegroundColor Red
+        Write-Host "[FATAL] Ошибка при обработке ${driveLetter}: $_" -ForegroundColor Red
         $stats.Errors++
     }
 }
