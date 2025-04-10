@@ -1,5 +1,5 @@
-# Export-AllUserDrives.ps1
-$outputFile = "C:\Temp\AllUserMappedDrives.csv"
+# Export-AllUserDrives_Simplified.ps1
+$outputFile = "C:\Temp\AllUserMappedDrives_Simplified.csv"
 
 # Создаем папку, если её нет
 if (-not (Test-Path "C:\Temp")) {
@@ -26,17 +26,16 @@ $results = foreach ($profile in $userProfiles) {
             
             [PSCustomObject]@{
                 UserName = $username
-                DriveLetter = "$driveLetter`:"  # Добавляем двоеточие
+                DriveLetter = "$driveLetter`:"
                 RemotePath = $remotePath
-                SID = $sid
-                ProfilePath = $profilePath
             }
         }
     }
 }
 
-# Экспортируем в CSV
-$results | Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8
+# Экспортируем в CSV только нужные столбцы
+$results | Select-Object UserName, DriveLetter, RemotePath |
+          Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8
 
 Write-Host "Экспорт завершен. Результаты сохранены в $outputFile"
 Write-Host "Найдено сетевых дисков: $($results.Count)"
