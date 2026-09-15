@@ -146,7 +146,7 @@ foreach ($profileKey in Get-ChildItem -LiteralPath $profileListPath) {
         $results += @(Get-NetworkDriveMappingsFromHive -HiveRoot $mountedHive -Sid $sid -AccountName $accountName -ProfileName $profileName -ProfileLoaded $false)
     }
     catch {
-        Write-Warning "Unable to inspect offline profile $accountName: $($_.Exception.Message)"
+        Write-Warning "Unable to inspect offline profile ${accountName}: $($_.Exception.Message)"
     }
     finally {
         if ($mounted) {
