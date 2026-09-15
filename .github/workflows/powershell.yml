@@ -32,7 +32,7 @@ jobs:
                   [ref]$errors
               )
               if ($errors.Count -gt 0) {
-                  $errors | ForEach-Object { Write-Error "$file: $($_.Message)" -ErrorAction Continue }
+                  $errors | ForEach-Object { Write-Error "${file}: $($_.Message)" -ErrorAction Continue }
                   $failed = $true
               }
           }
@@ -47,10 +47,7 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer \
-              -Path . \
-              -Recurse \
-              -Severity Warning,Error
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Warning,Error
           $results | Format-Table -AutoSize
           if ($results) {
               throw "PSScriptAnalyzer reported $($results.Count) warning/error finding(s)."
