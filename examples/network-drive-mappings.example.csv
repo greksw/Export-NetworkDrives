@@ -1,0 +1,3 @@
+SchemaVersion,SourceComputer,SourceSid,AccountName,ProfileName,ProfileLoadedAtExport,DriveLetter,RemotePath
+1,WS-EXAMPLE,S-1-5-21-111111111-222222222-333333333-1001,CONTOSO\alice,alice,True,P:,\\fileserver.example\projects
+1,WS-EXAMPLE,S-1-5-21-111111111-222222222-333333333-1001,CONTOSO\alice,alice,True,S:,\\fileserver.example\shared
