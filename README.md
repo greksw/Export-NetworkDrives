@@ -137,9 +137,9 @@ GitHub Actions runs on Windows and performs:
 
 Before using the toolkit at scale, test export and import on a disposable workstation or test profile with representative SMB shares.
 
-## Planned repository name
+## Repository history
 
-After review, this repository can be renamed from `Export-NetworkDrives` to `windows-network-drive-migration`.
+The current repository name reflects its broader migration scope while preserving the history of the original `Export-NetworkDrives` scripts.
 
 ## License
 
