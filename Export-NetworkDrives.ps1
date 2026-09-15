@@ -161,7 +161,13 @@ foreach ($profileKey in Get-ChildItem -LiteralPath $profileListPath) {
 }
 
 $results = @($results | Sort-Object AccountName, DriveLetter, RemotePath -Unique)
-$results | Export-Csv -LiteralPath $OutputPath -NoTypeInformation -Encoding UTF8
+if ($results.Count -gt 0) {
+    $results | Export-Csv -LiteralPath $OutputPath -NoTypeInformation -Encoding UTF8
+}
+else {
+    $header = 'SchemaVersion,SourceComputer,SourceSid,AccountName,ProfileName,ProfileLoadedAtExport,DriveLetter,RemotePath'
+    Set-Content -LiteralPath $OutputPath -Value $header -Encoding UTF8
+}
 
 Write-Output ([PSCustomObject]@{
     OutputPath = (Resolve-Path -LiteralPath $OutputPath).Path
