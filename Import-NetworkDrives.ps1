@@ -1,3 +1,4 @@
+#requires -Version 5.1
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
     [Parameter()]
@@ -97,21 +98,42 @@ if ($selectedRows.Count -eq 0) {
     throw 'No mappings matched the selected source user.'
 }
 
+$validatedMappings = @(
+    foreach ($row in $selectedRows) {
+        $mapping = Assert-ValidMapping -Mapping $row
+        [PSCustomObject]@{
+            SourceRow = $row
+            DriveLetter = $mapping.DriveLetter
+            DriveName = $mapping.DriveName
+            RemotePath = $mapping.RemotePath
+        }
+    }
+)
+
+$duplicateLetters = @(
+    $validatedMappings |
+        Group-Object DriveLetter |
+        Where-Object Count -gt 1
+)
+if ($duplicateLetters.Count -gt 0) {
+    $duplicates = ($duplicateLetters | ForEach-Object Name) -join ', '
+    throw "The selected mappings contain duplicate drive letters: $duplicates"
+}
+
 if ($PromptForCredential) {
     $Credential = Get-Credential -Message 'Enter SMB credentials for the network drive mappings.'
 }
 
 $stats = [ordered]@{
-    Total = $selectedRows.Count
+    Total = $validatedMappings.Count
     Created = 0
     Replaced = 0
     Skipped = 0
     Failed = 0
 }
 
-foreach ($row in $selectedRows) {
+foreach ($mapping in $validatedMappings) {
     try {
-        $mapping = Assert-ValidMapping -Mapping $row
         $existing = Get-PSDrive -Name $mapping.DriveName -ErrorAction SilentlyContinue
 
         if ($null -ne $existing) {
@@ -132,7 +154,8 @@ foreach ($row in $selectedRows) {
                 Remove-PSDrive -Name $mapping.DriveName -Force -ErrorAction Stop
                 $stats.Replaced++
             }
-            elseif ($WhatIfPreference) {
+            else {
+                $stats.Skipped++
                 continue
             }
         }
@@ -154,10 +177,13 @@ foreach ($row in $selectedRows) {
             $stats.Created++
             Write-Verbose "Mapped $($mapping.DriveLetter) to $($mapping.RemotePath)."
         }
+        else {
+            $stats.Skipped++
+        }
     }
     catch {
         $stats.Failed++
-        Write-Error "Failed to process mapping '$($row.DriveLetter)' -> '$($row.RemotePath)': $($_.Exception.Message)" -ErrorAction Continue
+        Write-Error "Failed to process mapping '$($mapping.DriveLetter)' -> '$($mapping.RemotePath)': $($_.Exception.Message)" -ErrorAction Continue
     }
 }
 
