@@ -69,7 +69,7 @@ function Get-NetworkDriveMappingsFromHive {
         $properties = Get-ItemProperty -LiteralPath $driveKey.PSPath -ErrorAction Stop
         $remotePath = [string]$properties.RemotePath
         if ([string]::IsNullOrWhiteSpace($remotePath) -or $remotePath -notmatch '^\\\\[^\\]+\\[^\\]+') {
-            Write-Warning "Ignoring invalid UNC path for $AccountName $driveLetter`: $remotePath"
+            Write-Warning "Ignoring invalid UNC path for $AccountName ${driveLetter}: $remotePath"
             continue
         }
 
@@ -80,7 +80,7 @@ function Get-NetworkDriveMappingsFromHive {
             AccountName           = $AccountName
             ProfileName           = $ProfileName
             ProfileLoadedAtExport = $ProfileLoaded
-            DriveLetter           = "$driveLetter`:"
+            DriveLetter           = "${driveLetter}:"
             RemotePath            = $remotePath
         }
     }
